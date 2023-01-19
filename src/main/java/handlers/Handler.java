@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.Socket;
 
 @Slf4j
+@Getter
 public abstract class Handler {
     protected final Socket socket;
     protected BufferedReader reader;

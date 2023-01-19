@@ -1,5 +1,6 @@
 package handlers.players;
 
+import game.Functions;
 import handlers.Handler;
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,46 +10,54 @@ import java.util.Scanner;
 
 @Slf4j
 public class Player extends Handler {
+    private final Scanner scanner;
+    private final String userName;
 
-    private static final String START_GAME = "start_game";
-    public Player(Socket socket) {
+    public Player(Socket socket, String userName, Scanner scanner) {
         super(socket);
-        log.info("Connected to server");
+        this.scanner = scanner;
         this.listenForMessage();
+        this.userName = userName;
+        sendMessage(userName);
         this.test();
+        log.info("Connected to server");
     }
 
     private void test(){
-        Scanner scanner = new Scanner(System.in);
         while(socket.isConnected()){
-            try{
-                this.writer.write(scanner.nextLine());
-                this.writer.newLine();
-                this.writer.flush();
-                log.info("Question received");
-            }
-            catch (IOException e){
-                log.error("Error reading question {}", e.getMessage());
-                closeEverything();
-            }
+            String message = scanner.nextLine();
+            sendMessage(createProperMessage(Functions.LETTER, message));
         }
     }
 
     private void listenForMessage(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String msg;
-
-                while(socket.isConnected()){
-                    try {
-                        msg = reader.readLine();
-                        System.out.println(msg);
-                    } catch (IOException e) {
-                        log.error("Error receiving message from other clients");
-                    }
+        new Thread(() -> {
+            String msg;
+            while(socket.isConnected()){
+                try {
+                    msg = reader.readLine();
+                    System.out.println(msg);
+                } catch (IOException e) {
+                    log.error("Error receiving message from other clients");
                 }
             }
         }).start();
+    }
+
+    private void sendMessage(String message) {
+        try{
+            this.writer.write(message);
+            this.writer.newLine();
+            this.writer.flush();
+            log.info("Message '{}' sent", message);
+        }
+        catch (IOException e){
+            log.error("Error reading question {}", e.getMessage());
+            closeEverything();
+        }
+    }
+
+    private String createProperMessage(Functions functions, String message){
+        return String.join(":", userName, functions.getFunction(), message);
     }
 }

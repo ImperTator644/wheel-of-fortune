@@ -1,46 +1,60 @@
 package handlers.server.room;
 
 import handlers.Handler;
-import lombok.Setter;
+import handlers.players.PlayerModel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
 
 @Slf4j
 public class PlayerHandler extends Handler implements Runnable {
-    @Setter
-    private List<PlayerHandler> competitors;
+    @Getter
+    private PlayerModel playerModel;
 
     public PlayerHandler(Socket socket) {
         super(socket);
+        playerModel = new PlayerModel(getUserName());
         log.info("Player handler initialized");
     }
 
     @Override
     public void run() {
-        String message;
+        while (socket.isConnected()) {
 
-        while(socket.isConnected()){
-            try{
-                message = this.reader.readLine();
-                broadcastMessage(message);
-            } catch (IOException e) {
-                log.error("Error receiving message on the server");
-            }
         }
+        closeEverything();
     }
 
-    private void broadcastMessage(String messageToSend){
-        for(PlayerHandler player : competitors){
-            try{
-                player.writer.write(messageToSend);
-                player.writer.newLine();
-                player.writer.flush();
-            } catch (IOException e) {
-                log.error("Error sending message from server to player");
-            }
+    private String getUserName() {
+        try {
+            return this.reader.readLine();
+        } catch (IOException e) {
+            log.error("Error receiving message on the server");
+            closeEverything();
+        }
+        return "default";
+    }
+
+    public String getMessageFromClient() {
+        try {
+            return this.reader.readLine();
+        } catch (IOException e) {
+            log.error("Error receiving message on the server");
+            closeEverything();
+        }
+        return null;
+    }
+
+    public void sendMessageToClient(String message) {
+        try {
+            this.getWriter().write(message);
+            this.getWriter().newLine();
+            this.getWriter().flush();
+        } catch (IOException e) {
+            log.error("Error sending message from server to player");
+            closeEverything();
         }
     }
 }
